@@ -3,12 +3,16 @@ package com.example.howmuchuse;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.app.DatePickerDialog;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CalendarView;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
@@ -29,6 +33,8 @@ public class MainActivity extends AppCompatActivity
     private TextView mTvResult;
     private TextView tvToday;
     private TextView tvDate;
+    private EditText budgetET;
+    private Button budgetBtn;
 
     // DatePicker 에서 날짜 선택 시 호출
     private DatePickerDialog.OnDateSetListener mDateSetListener = new DatePickerDialog.OnDateSetListener() {
@@ -60,6 +66,13 @@ public class MainActivity extends AppCompatActivity
         // D-day 보여주기
         mTvResult = findViewById(R.id.tv_result);
 
+        //예산 등록 버튼
+        budgetBtn = findViewById(R.id.budget_btn);
+        budgetET = findViewById(R.id.budget_et);
+        String budget = null;
+        final SharedPreferences sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
+        budget = sp.getString("budget","");
+        budgetET.setText(budget);
 
         // Input date click 시 date picker 호출
         View.OnClickListener clickListener = new View.OnClickListener() {
@@ -74,6 +87,17 @@ public class MainActivity extends AppCompatActivity
             }
         };
         findViewById(R.id.btn_input_date).setOnClickListener(clickListener);
+
+        budgetBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String value = budgetET.getText().toString();
+
+                SharedPreferences.Editor editor = sp.edit();
+                editor.putString("budget", value);
+                editor.commit();
+            }
+        });
     }
 
     /**
