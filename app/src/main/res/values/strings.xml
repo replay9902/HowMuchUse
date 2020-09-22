@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">HowMuchUse</string>
+    <string name="format_today">"yyyy년 MM월 dd일 E요일"</string>
+    <string name="input_date">"날짜 입력"</string>
+</resources>
