@@ -5,10 +5,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CalendarView;
 import android.widget.DatePicker;
@@ -36,13 +38,25 @@ public class MainActivity extends AppCompatActivity
     private EditText budgetET;
     private Button budgetBtn;
 
+    private SharedPreferences sp;
+    String budget = null;
+    String dday = null;
+
     // DatePicker 에서 날짜 선택 시 호출
     private DatePickerDialog.OnDateSetListener mDateSetListener = new DatePickerDialog.OnDateSetListener() {
         @Override
         public void onDateSet(DatePicker a_view, int a_year, int a_monthOfYear, int a_dayOfMonth) {
             // D-day 계산 결과 출력
             mTvResult.setText(getDday(a_year, a_monthOfYear, a_dayOfMonth));
-            tvDate.setText("선택된 날짜 : " + getSelectDay(a_year, a_monthOfYear, a_dayOfMonth));
+            dday = getSelectDay(a_year, a_monthOfYear, a_dayOfMonth);
+
+            sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sp.edit();
+            editor.putString("dday", dday);
+            editor.commit();
+
+            dday = sp.getString("dday","");
+            tvDate.setText("선택된 날짜 : " + dday);
         }
     };
 
@@ -69,8 +83,10 @@ public class MainActivity extends AppCompatActivity
         //예산 등록 버튼
         budgetBtn = findViewById(R.id.budget_btn);
         budgetET = findViewById(R.id.budget_et);
-        String budget = null;
-        final SharedPreferences sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
+
+
+        SharedPreferences sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
         budget = sp.getString("budget","");
         budgetET.setText(budget);
 
@@ -84,18 +100,25 @@ public class MainActivity extends AppCompatActivity
 
                 DatePickerDialog dialog = new DatePickerDialog(MainActivity.this, mDateSetListener, year, month, day);
                 dialog.show();
+
+
             }
         };
         findViewById(R.id.btn_input_date).setOnClickListener(clickListener);
 
+        //예산 등록 버튼 눌렀을 때
         budgetBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String value = budgetET.getText().toString();
 
+                SharedPreferences sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sp.edit();
                 editor.putString("budget", value);
                 editor.commit();
+                // 저장 버튼 누른 후 키보드 안보이게 하기
+                InputMethodManager imm = (InputMethodManager) getSystemService( Context.INPUT_METHOD_SERVICE );
+                imm.hideSoftInputFromWindow( budgetET.getWindowToken(), 0 );
             }
         });
     }
