@@ -16,6 +16,7 @@ import android.widget.CalendarView;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -32,22 +33,33 @@ public class MainActivity extends AppCompatActivity
     private Calendar mCalendar;
 
     // D-day result
-    private TextView mTvResult;
+    private TextView tvDday;
     private TextView tvToday;
     private TextView tvDate;
+    private TextView tvMoneyForDay;
+    private TextView tvMoneyForRemain;
     private EditText budgetET;
     private Button budgetBtn;
+    private EditText balanceET;
+    private Button balanceBtn;
 
     private SharedPreferences sp;
     String budget = null;
     String dday = null;
+    String balance = null;
+    String moneyForDay = null;
+    String moneyForRemain = null;
+
 
     // DatePicker 에서 날짜 선택 시 호출
     private DatePickerDialog.OnDateSetListener mDateSetListener = new DatePickerDialog.OnDateSetListener() {
         @Override
         public void onDateSet(DatePicker a_view, int a_year, int a_monthOfYear, int a_dayOfMonth) {
             // D-day 계산 결과 출력
-            mTvResult.setText(getDday(a_year, a_monthOfYear, a_dayOfMonth));
+
+            long result = getDday(a_year, a_monthOfYear, a_dayOfMonth);
+
+            tvDday.setText(getDdayDisplay(result).toString());
             dday = getSelectDay(a_year, a_monthOfYear, a_dayOfMonth);
 
             sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
@@ -57,6 +69,19 @@ public class MainActivity extends AppCompatActivity
 
             dday = sp.getString("dday","");
             tvDate.setText("선택된 날짜 : " + dday);
+
+            if(budget != null){
+
+                long _dday = getDday(a_year, a_monthOfYear, a_dayOfMonth);
+
+                long lbudget = Long.parseLong(budget);
+                double _MoneyForday = lbudget / _dday;
+                //Integer imoneyForDay = Integer.parseInt(String.valueOf(_MoneyForday));
+                moneyForDay = Double.toString((_MoneyForday));
+                tvMoneyForDay.setText("예산은 " + budget + "," + "D-day는   " + _dday + ", 하루에 " + moneyForDay);
+            }
+            //Toast.makeText(MainActivity.this,"예산:" + budget, Toast.LENGTH_SHORT).show();
+            //Toast.makeText(MainActivity.this,"잔액:" + balance, Toast.LENGTH_SHORT).show();
         }
     };
 
@@ -74,21 +99,29 @@ public class MainActivity extends AppCompatActivity
         // Today 보여주기
         tvToday = findViewById(R.id.tv_today);
         tvDate = findViewById(R.id.tv_date);
+        tvMoneyForDay = findViewById(R.id.tv_money_for_day);
+        tvMoneyForRemain = findViewById(R.id.tv_money_for_remain);
 
         tvToday.setText("오늘 날짜 : " + getToday());
 
         // D-day 보여주기
-        mTvResult = findViewById(R.id.tv_result);
+        tvDday = findViewById(R.id.tv_dday);
 
         //예산 등록 버튼
         budgetBtn = findViewById(R.id.budget_btn);
         budgetET = findViewById(R.id.budget_et);
 
+        //잔액 등록 버튼
+        balanceBtn = findViewById(R.id.balance_btn);
+        balanceET = findViewById(R.id.balance_et);
+
 
         SharedPreferences sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
         budget = sp.getString("budget","");
+        balance = sp.getString("balance", "");
         budgetET.setText(budget);
+        balanceET.setText(balance);
 
         // Input date click 시 date picker 호출
         View.OnClickListener clickListener = new View.OnClickListener() {
@@ -111,7 +144,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 String value = budgetET.getText().toString();
-
+                budget = value;
                 SharedPreferences sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sp.edit();
                 editor.putString("budget", value);
@@ -119,6 +152,23 @@ public class MainActivity extends AppCompatActivity
                 // 저장 버튼 누른 후 키보드 안보이게 하기
                 InputMethodManager imm = (InputMethodManager) getSystemService( Context.INPUT_METHOD_SERVICE );
                 imm.hideSoftInputFromWindow( budgetET.getWindowToken(), 0 );
+            }
+        });
+
+        //잔액 등록버튼 늘렀을 때
+        balanceBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String value = balanceET.getText().toString();
+
+                SharedPreferences sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sp.edit();
+                editor.putString("balance", value);
+                editor.commit();
+
+                // 저장 버튼 누른 후 키보드 안보이게 하기
+                InputMethodManager imm = (InputMethodManager) getSystemService( Context.INPUT_METHOD_SERVICE );
+                imm.hideSoftInputFromWindow( balanceET.getWindowToken(), 0 );
             }
         });
     }
@@ -150,7 +200,7 @@ public class MainActivity extends AppCompatActivity
     /**
      * D-day 반환
      */
-    private String getDday(int a_year, int a_monthOfYear, int a_dayOfMonth) {
+    private long getDday(int a_year, int a_monthOfYear, int a_dayOfMonth) {
         // D-day 설정
         final Calendar ddayCalendar = Calendar.getInstance();
         ddayCalendar.set(a_year, a_monthOfYear, a_dayOfMonth);
@@ -159,6 +209,11 @@ public class MainActivity extends AppCompatActivity
         final long dday = ddayCalendar.getTimeInMillis() / ONE_DAY;
         final long today = Calendar.getInstance().getTimeInMillis() / ONE_DAY;
         long result = dday - today;
+
+        return result;
+    }
+
+    private String getDdayDisplay(long result){
 
         // 출력 시 d-day 에 맞게 표시
         final String strFormat;
@@ -174,4 +229,6 @@ public class MainActivity extends AppCompatActivity
         final String strCount = (String.format(strFormat, result));
         return strCount;
     }
+
+
 }
