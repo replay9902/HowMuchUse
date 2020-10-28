@@ -18,6 +18,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -63,9 +64,13 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onDateSet(DatePicker a_view, int a_year, int a_monthOfYear, int a_dayOfMonth) {
 
+            final Calendar stCalendar = Calendar.getInstance();
+            stCalendar.set(a_year, a_monthOfYear, a_dayOfMonth);
 
-            long result = getDday(a_year, a_monthOfYear, a_dayOfMonth);
-            startDay = getSelectDay(a_year, a_monthOfYear, a_dayOfMonth);
+            final String strFormat = getString(R.string.format_date);
+            SimpleDateFormat stDateFormat = new SimpleDateFormat(strFormat);
+
+            startDay = stDateFormat.format(stCalendar.getTime());
 
             //sp에 dday값 저장
             sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
@@ -73,22 +78,34 @@ public class MainActivity extends AppCompatActivity
             editor.putString("startDay", startDay);
             editor.commit();
 
-            //tvDate에 선택된 날짜 표시
-            tvDate.setText("시작 날짜 : " + startDay);
+            endDay = sp.getString("endDay", "");
 
+            //tvDate에 선택된 날짜 표시
+            String text = "시작 날짜 : " + startDay;
+
+            if(endDay != null){
+                text += " 종료 날짜 : " + endDay;
+            }
+            tvDate.setText(text);
+
+            Long term = null;
             //tvDday에 D-day 표시
-            tvDday.setText(getDdayDisplay(result)); //D-4
+
+            try {
+                term = getDateCalculation(startDay, endDay);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
+             tvDday.setText(String.valueOf(term));
 
             //tvMoneyPerDay 에 하루당 금액 표시
-            if(budget != null){
-
-                long _dday = getDday(a_year, a_monthOfYear, a_dayOfMonth);
-
+            if(budget != "" && startDay != "" && endDay != "") {
                 long lbudget = Long.parseLong(budget);
-                double _moneyPerDay = lbudget / _dday;
+                double dmoneyPerDay = lbudget / term;
                 //Integer imoneyPerDay = Integer.parseInt(String.valueOf(_moneyPerDay));
-                moneyPerDay = Double.toString((_moneyPerDay));
-                tvMoneyPerDay.setText("예산은 " + budget + "," + "D-day는   " + _dday + ", 하루에 " + moneyPerDay);
+                moneyPerDay = Double.toString(dmoneyPerDay);
+                tvMoneyPerDay.setText(term + " 일간" + budget + "원을 가지고  하루에 " + moneyPerDay + "원씩 쓸수 있어요.");
             }
 
 
@@ -106,32 +123,52 @@ public class MainActivity extends AppCompatActivity
         public void onDateSet(DatePicker a_view, int a_year, int a_monthOfYear, int a_dayOfMonth) {
 
 
-            long result = getDday(a_year, a_monthOfYear, a_dayOfMonth);
-            startDay = getSelectDay(a_year, a_monthOfYear, a_dayOfMonth);
+            final Calendar edCalendar = Calendar.getInstance();
+            edCalendar.set(a_year, a_monthOfYear, a_dayOfMonth);
+
+            final String strFormat = getString(R.string.format_date);
+            SimpleDateFormat stDateFormat = new SimpleDateFormat(strFormat);
+
+            endDay = stDateFormat.format(edCalendar.getTime());
+
 
             //sp에 dday값 저장
             sp = getSharedPreferences("myfile", Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = sp.edit();
-            editor.putString("startDay", startDay);
+            editor.putString("endDay", endDay);
             editor.commit();
 
-            //tvDate에 선택된 날짜 표시
-            tvDate.setText("선택된 날짜 : " + startDay);
+            startDay = sp.getString("startDay", "");
 
+            //tvDate에 선택된 날짜 표시
+            String text = "시작 날짜 : " + startDay;
+
+            if(endDay != null){
+                text += " 종료 날짜 : " + endDay;
+            }
+            tvDate.setText(text);
+
+            Long term = null;
             //tvDday에 D-day 표시
-            tvDday.setText(getDdayDisplay(result)); //D-4
+
+            try {
+                term = getDateCalculation(startDay, endDay);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+
+            tvDday.setText(String.valueOf(term));
 
             //tvMoneyPerDay 에 하루당 금액 표시
-            if(budget != null){
-
-                long _dday = getDday(a_year, a_monthOfYear, a_dayOfMonth);
-
+            if(budget != "" && startDay != "" && endDay != "") {
                 long lbudget = Long.parseLong(budget);
-                double _moneyPerDay = lbudget / _dday;
+                double dmoneyPerDay = lbudget / term;
                 //Integer imoneyPerDay = Integer.parseInt(String.valueOf(_moneyPerDay));
-                moneyPerDay = Double.toString((_moneyPerDay));
-                tvMoneyPerDay.setText("예산은 " + budget + "," + "D-day는   " + _dday + ", 하루에 " + moneyPerDay);
+                moneyPerDay = Double.toString(dmoneyPerDay);
+                tvMoneyPerDay.setText(term + " 일간" + budget + "원을 가지고  하루에 " + moneyPerDay + "원씩 쓸수 있어요.");
             }
+
+
 
 
 
@@ -178,8 +215,21 @@ public class MainActivity extends AppCompatActivity
         SharedPreferences.Editor editor = sp.edit();
         budget = sp.getString("budget","");
         balance = sp.getString("balance", "");
+        startDay = sp.getString("startDay", "");
+        endDay = sp.getString("endDay", "");
         etBudget.setText(budget);
         etBalance.setText(balance);
+
+        String text = "";
+        if(startDay != ""){
+            text += "시작 날짜 : " + startDay;
+        }
+        if(endDay != ""){
+            text += "종료 날짜 : "+ endDay;
+        }
+
+        tvDate.setText(text);
+
 
         // 시작 날짜 선택 click 시 date picker 호출
         btnStartDate.setOnClickListener(new View.OnClickListener() {
@@ -289,6 +339,19 @@ public class MainActivity extends AppCompatActivity
         return result;
     }
 
+    private long getDateCalculation(String startDateString, String endDateString) throws ParseException {
+
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-mm-dd");
+        Date startDate = format.parse(startDateString);
+        Date endDate = format.parse(endDateString);
+
+        long diff = endDate.getTime() - startDate.getTime();
+        long diffDays = diff / ( 24 * 60 * 60 * 1000);
+
+        return diffDays;
+    }
+
+
     /**
      * 숫자값 형태의 dday를 D-1과 같은 문자형태로 리턴
      * @param result
@@ -310,6 +373,8 @@ public class MainActivity extends AppCompatActivity
         final String strCount = (String.format(strFormat, result));
         return strCount;
     }
+
+
 
 
 }
